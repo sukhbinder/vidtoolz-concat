@@ -5,13 +5,14 @@ from unittest.mock import patch, mock_open
 
 from argparse import ArgumentParser
 
+
 def test_create_parser():
     subparser = ArgumentParser().add_subparsers()
     parser = w.create_parser(subparser)
 
     assert parser is not None
 
-    result = parser.parse_args(['hello'])
+    result = parser.parse_args(["hello"])
     assert result.inputfile == "hello"
     assert result.outfilename is None
     assert result.section is False
@@ -24,9 +25,6 @@ def test_plugin(capsys):
     assert "Hello! This is an example ``vidtoolz`` plugin." in captured.out
 
 
-
-
-
 @pytest.fixture
 def mock_filesystem(tmpdir):
     """Set up a temporary file system with some dummy files."""
@@ -36,6 +34,7 @@ def mock_filesystem(tmpdir):
         f.write("")  # Create an empty file
         files.append(str(f))
     return files
+
 
 @patch("os.system", return_value=0)  # Mock os.system to prevent actual system calls
 @patch("os.path.exists", return_value=True)  # Mock os.path.exists to always return True
@@ -55,10 +54,13 @@ def test_make_video(mock_exists, mock_system, mock_filesystem):
     assert fname in cmd
     assert "mylist.txt" in cmd
 
+
 @patch("os.system", return_value=0)
 @patch("os.path.exists", return_value=True)
 @patch("builtins.open", new_callable=mock_open)  # Mock file opening
-@patch("os.path.getctime", side_effect=lambda x: int(x.split("_")[-1].split(".")[0]))  # Mock file creation times
+@patch(
+    "os.path.getctime", side_effect=lambda x: int(x.split("_")[-1].split(".")[0])
+)  # Mock file creation times
 def test_concat(mock_getctime, mock_open_file, mock_exists, mock_system, tmpdir):
     # Create a mock input file with paths to mock video files
     input_file = tmpdir.join("input.txt")
