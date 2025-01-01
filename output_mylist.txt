@@ -1,0 +1,5 @@
+file '/private/var/folders/f2/80tth4ln6rx7vhb4_4m979pm0000gn/T/pytest-of-sukhbindersingh/pytest-2/test_make_video0/file_0.mp4'
+file '/private/var/folders/f2/80tth4ln6rx7vhb4_4m979pm0000gn/T/pytest-of-sukhbindersingh/pytest-2/test_make_video0/file_1.mp4'
+file '/private/var/folders/f2/80tth4ln6rx7vhb4_4m979pm0000gn/T/pytest-of-sukhbindersingh/pytest-2/test_make_video0/file_2.mp4'
+file '/private/var/folders/f2/80tth4ln6rx7vhb4_4m979pm0000gn/T/pytest-of-sukhbindersingh/pytest-2/test_make_video0/file_3.mp4'
+file '/private/var/folders/f2/80tth4ln6rx7vhb4_4m979pm0000gn/T/pytest-of-sukhbindersingh/pytest-2/test_make_video0/file_4.mp4'
