@@ -3,6 +3,19 @@ import os
 import numpy as np
 
 
+def determine_output_path(input_file, output_file):
+    input_dir, input_filename = os.path.split(input_file)
+    name, _ = os.path.splitext(input_filename)
+
+    if output_file:
+        output_dir, output_filename = os.path.split(output_file)
+        if not output_dir:  # If no directory is specified, use input file's directory
+            return os.path.join(input_dir, output_filename)
+        return output_file
+    else:
+        return os.path.join(input_dir, f"{name}_concat.mp4")
+
+
 def make_video(files, fname):
     base_name = os.path.basename(fname)
     bname, ext = os.path.splitext(base_name)
@@ -52,10 +65,10 @@ def concat(inputfile: str, fname: str = None, section: bool = False, nsec: int =
 
 def create_parser(subparser):
     parser = subparser.add_parser("concat", description="Concat videos using ffmpeg ")
-    parser.add_argument("inputfile", type=str, help="Inputfiles to concatenate")
+    parser.add_argument("input", type=str, help="Inputfiles to concatenate")
     parser.add_argument(
         "-o",
-        "--outfilename",
+        "--output",
         type=str,
         help="Folder where files are (default: %(default)s)",
         default=None,
@@ -77,7 +90,7 @@ def create_parser(subparser):
 
 
 class ViztoolzPlugin:
-    """ Concat videos using ffmpeg  """
+    """Concat videos using ffmpeg"""
 
     __name__ = "concat"
 
@@ -87,7 +100,8 @@ class ViztoolzPlugin:
         self.parser.set_defaults(func=self.run)
 
     def run(self, args):
-        fname = concat(args.inputfile, args.outfilename, args.section, args.nsec)
+        output = determine_output_path(args.input, args.output)
+        fname = concat(args.input, output, args.section, args.nsec)
         print("{} created".format(fname))
 
     def hello(self, args):

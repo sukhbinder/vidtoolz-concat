@@ -13,8 +13,8 @@ def test_create_parser():
     assert parser is not None
 
     result = parser.parse_args(["hello"])
-    assert result.inputfile == "hello"
-    assert result.outfilename is None
+    assert result.input == "hello"
+    assert result.output is None
     assert result.section is False
     assert result.nsec == 500
 
