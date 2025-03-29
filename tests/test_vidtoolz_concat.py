@@ -12,11 +12,15 @@ def test_create_parser():
 
     assert parser is not None
 
-    result = parser.parse_args(["hello"])
-    assert result.input == "hello"
+    result = parser.parse_args(["hello.txt"])
+    assert result.inputfile == "hello.txt"
     assert result.output is None
     assert result.section is False
     assert result.nsec == 500
+
+    result = parser.parse_args(["-i", "1.mov", "-i", "2.mov"])
+    assert result.inputfile is None
+    assert result.input == ["1.mov", "2.mov"]
 
 
 def test_plugin(capsys):
