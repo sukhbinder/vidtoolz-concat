@@ -1,6 +1,6 @@
 [project]
 name = "vidtoolz-concat"
-version = "0.0.2"
+version = "0.0.3"
 description = "Concat videos using ffmpeg "
 readme = "README.md"
 authors = [{name = "Sukhbinder Singh"}]

@@ -2,6 +2,49 @@ import vidtoolz
 import os
 import numpy as np
 import tempfile
+import moviepy as mpy
+
+
+def create_concat_movie(inputfile, output, onlyaudio=False):
+    if isinstance(inputfile, list):
+        files = inputfile
+        folder = os.path.dirname(inputfile[0])
+    else:
+        inputfile = os.path.abspath(inputfile)
+        folder = os.path.dirname(inputfile)
+        with open(inputfile, "r") as fin:
+            files = fin.readlines()
+
+    files = [os.path.join(folder, file.strip()) for file in files]
+    clips = [mpy.VideoFileClip(file) for file in files]
+
+    clip = mpy.concatenate_videoclips(clips)
+
+    # Write out only audio file also
+    audio = clip.audio
+    aoutput_path = f"{output}-audio.mp3"
+    audio = audio.with_fps(44100)
+    audio.write_audiofile(aoutput_path)
+    print("{} mp3 created".format(aoutput_path))
+
+    # write out video
+    if not onlyaudio:
+        output_path = output
+        if not os.path.exists(output_path):
+            os.remove(output_path)
+
+        clip.write_videofile(
+            output_path,
+            temp_audiofile="out.m4a",
+            audio=True,
+            audio_codec="aac",
+            codec="libx264",
+            fps=60,
+        )
+        print("{} mp4 created".format(output_path))
+
+    _ = [clip.close() for clip in clips]
+    return output_path
 
 
 def determine_output_path(input_file, output_file):
@@ -17,7 +60,9 @@ def determine_output_path(input_file, output_file):
         return os.path.join(input_dir, f"{name}_concat.mp4")
 
 
-def make_video(files, fname):
+def make_video(files, fname, encoding=False):
+    if os.path.exists(fname):
+        os.remove(fname)
     base_name = os.path.basename(fname)
     bname, ext = os.path.splitext(base_name)
     tempdir = tempfile.gettempdir()
@@ -26,14 +71,22 @@ def make_video(files, fname):
         for f in files:
             if os.path.exists(f):
                 fout.write("file '{}'\n".format(f))
-    cmdline = "ffmpeg -f concat -safe 0 -i {0} -c copy {1}".format(out_file, fname)
+    if encoding:
+        cmdline = "ffmpeg -f concat -safe 0 -i {0} -c:v libx264 -crf 23 -preset fast -c:a aac -b:a 192k {1}".format(
+            out_file, fname
+        )
+    else:
+        cmdline = "ffmpeg -f concat -safe 0 -i {0} -c copy {1}".format(out_file, fname)
+
     print(cmdline)
     iret = os.system(cmdline)
     print(cmdline)
     return iret
 
 
-def concat(inputfile, fname: str = None, section: bool = False, nsec: int = 500):
+def concat(
+    inputfile, fname: str = None, section: bool = False, nsec: int = 500, encoding=False
+):
     if isinstance(inputfile, list):
         files = inputfile
         folder = os.path.dirname(inputfile[0])
@@ -49,7 +102,7 @@ def concat(inputfile, fname: str = None, section: bool = False, nsec: int = 500)
         # print(files)
     files = [os.path.join(folder, f.strip()) for f in files]
     if not section:
-        iret = make_video(files, fname)
+        iret = make_video(files, fname, encoding)
     else:
         # Sections video and breaks them if the creation time is greater than 500 sec nsec
         dd = np.array([os.path.getctime(f) for f in files])
@@ -62,7 +115,7 @@ def concat(inputfile, fname: str = None, section: bool = False, nsec: int = 500)
         fileprefix, ext = os.path.splitext(fname)
         for i, b in enumerate(breaks):
             fname = "{0}_{1}_{2}.mp4".format(fileprefix, i, beg)
-            iret = make_video(files[beg : b + 1], fname)
+            iret = make_video(files[beg : b + 1], fname, encoding)
             print("Return code is ", iret)
             beg = b + 1
 
@@ -111,6 +164,18 @@ def create_parser(subparser):
         default=None,
         help="if Provided, go to this folder, before anything.",
     )
+    parser.add_argument(
+        "-e",
+        "--encoding",
+        action="store_true",
+        help="if Provided, Use re-encoding",
+    )
+    parser.add_argument(
+        "-um",
+        "--use-moviepy",
+        action="store_true",
+        help="if Provided, Use moviepy",
+    )
 
     return parser
 
@@ -146,7 +211,10 @@ class ViztoolzPlugin:
             inputs = args.inputfile
             output = determine_output_path(args.inputfile, args.output)
 
-        fname = concat(inputs, output, args.section, args.nsec)
+        if args.use_moviepy:
+            fname = create_concat_movie(inputs, output, onlyaudio=False)
+        else:
+            fname = concat(inputs, output, args.section, args.nsec, args.encoding)
         print("{} created".format(fname))
 
     def hello(self, args):

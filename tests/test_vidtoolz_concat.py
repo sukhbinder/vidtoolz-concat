@@ -17,6 +17,7 @@ def test_create_parser():
     assert result.output is None
     assert result.section is False
     assert result.nsec == 500
+    assert result.use_moviepy is False
 
     result = parser.parse_args(["-i", "1.mov", "-i", "2.mov"])
     assert result.inputfile is None
@@ -40,6 +41,7 @@ def mock_filesystem(tmpdir):
     return files
 
 
+@patch("os.remove", return_value=0)
 @patch("os.system", return_value=0)  # Mock os.system to prevent actual system calls
 @patch("os.path.exists", return_value=True)  # Mock os.path.exists to always return True
 def test_make_video(mock_exists, mock_system, mock_filesystem):
@@ -59,6 +61,7 @@ def test_make_video(mock_exists, mock_system, mock_filesystem):
     assert "mylist.txt" in cmd
 
 
+@patch("os.remove", return_value=0)
 @patch("os.system", return_value=0)
 @patch("os.path.exists", return_value=True)
 @patch("builtins.open", new_callable=mock_open)  # Mock file opening
