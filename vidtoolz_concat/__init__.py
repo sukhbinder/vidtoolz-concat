@@ -30,7 +30,7 @@ def create_concat_movie(inputfile, output, onlyaudio=False):
     # write out video
     if not onlyaudio:
         output_path = output
-        if not os.path.exists(output_path):
+        if os.path.exists(output_path):
             os.remove(output_path)
 
         clip.write_videofile(
@@ -84,8 +84,28 @@ def make_video(files, fname, encoding=False):
     return iret
 
 
+def division_list(number, step):
+    result = []
+    current = step
+    while current < number:
+        result.append(current)
+        current += step
+    result.append(number)
+    return result
+
+
+def make_stage_video(fname, files, breaks, encoding=False):
+    fileprefix, ext = os.path.splitext(fname)
+    beg = 0
+    for i, b in enumerate(breaks):
+        fname = "{0}_{1}_{2}.mp4".format(fileprefix, i, beg)
+        iret = make_video(files[beg : b + 1], fname, encoding)
+        print("Return code is ", iret)
+        beg = b + 1
+
+
 def concat(
-    inputfile, fname: str = None, section: bool = False, nsec: int = 500, encoding=False
+    inputfile, fname: str = None, section: int = None, nsec: int = None, encoding=False
 ):
     if isinstance(inputfile, list):
         files = inputfile
@@ -101,24 +121,24 @@ def concat(
         fname = os.path.join(folder, fname)
         # print(files)
     files = [os.path.join(folder, f.strip()) for f in files]
-    if not section:
-        iret = make_video(files, fname, encoding)
-    else:
+
+    if nsec is not None:
         # Sections video and breaks them if the creation time is greater than 500 sec nsec
         dd = np.array([os.path.getctime(f) for f in files])
         ddr = np.roll(dd, -1)
         diff = ddr - dd
         breaks = [i for i, d in enumerate(diff) if d > nsec]
-        beg = 0
         breaks.append(len(dd))
         print(breaks)
-        fileprefix, ext = os.path.splitext(fname)
-        for i, b in enumerate(breaks):
-            fname = "{0}_{1}_{2}.mp4".format(fileprefix, i, beg)
-            iret = make_video(files[beg : b + 1], fname, encoding)
-            print("Return code is ", iret)
-            beg = b + 1
+        make_stage_video(fname, files, breaks, encoding)
 
+    else:
+        if section is None:
+            iret = make_video(files, fname, encoding)
+        else:
+            nlen = len(files)
+            breaks = division_list(nlen, section)
+            make_stage_video(fname, files, breaks, encoding)
     return fname
 
 
@@ -141,14 +161,15 @@ def create_parser(subparser):
     parser.add_argument(
         "-s",
         "--section",
-        help="If given sections Video by `nsec` (default: %(default)s)",
-        action="store_true",
+        help="If given sections video by this number (default: %(default)s)",
+        default=None,
+        type=int,
     )
     parser.add_argument(
         "-n",
         "--nsec",
-        help="Section Video by `nsec` (default: %(default)s)",
-        default=500,
+        help="Section Video by using time `nsec` (default: %(default)s)",
+        default=None,
     )
     parser.add_argument(
         "-i",

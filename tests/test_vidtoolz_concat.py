@@ -15,8 +15,8 @@ def test_create_parser():
     result = parser.parse_args(["hello.txt"])
     assert result.inputfile == "hello.txt"
     assert result.output is None
-    assert result.section is False
-    assert result.nsec == 500
+    assert result.section is None
+    assert result.nsec is None
     assert result.use_moviepy is False
 
     result = parser.parse_args(["-i", "1.mov", "-i", "2.mov"])
@@ -85,7 +85,7 @@ def test_concat(mock_getctime, mock_open_file, mock_exists, mock_system, tmpdir)
     assert mock_open_file.called  # Ensure the file was opened
 
     # Call concat with sections
-    output = w.concat(str(input_file), "output.mp4", section=True, nsec=2)
+    output = w.concat(str(input_file), "output.mp4", nsec=40)
 
     # Assertions for section mode
-    assert "output_0_0.mp4" in output  # Check the generated file name
+    assert "output.mp4" in output  # Check the generated file name
