@@ -79,7 +79,7 @@ def make_video(files, fname, encoding=False):
             ffmpeg, out_file, fname
         )
     else:
-        cmdline = "{0} -f concat -safe 0 -i {1}} -c copy {2}".format(ffmpeg, out_file, fname)
+        cmdline = "{0} -f concat -safe 0 -i {1} -c copy {2}".format(ffmpeg, out_file, fname)
 
     print(cmdline)
     iret = os.system(cmdline)
