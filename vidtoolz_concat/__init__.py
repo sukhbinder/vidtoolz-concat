@@ -3,6 +3,7 @@ import os
 import numpy as np
 import tempfile
 import moviepy as mpy
+import imageio_ffmpeg
 
 
 def create_concat_movie(inputfile, output, onlyaudio=False):
@@ -66,17 +67,19 @@ def make_video(files, fname, encoding=False):
     base_name = os.path.basename(fname)
     bname, ext = os.path.splitext(base_name)
     tempdir = tempfile.gettempdir()
+    
+    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
     out_file = os.path.join(tempdir, "{}_mylist.txt".format(bname))
     with open(out_file, "w") as fout:
         for f in files:
             if os.path.exists(f):
                 fout.write("file '{}'\n".format(f))
     if encoding:
-        cmdline = "ffmpeg -f concat -safe 0 -i {0} -c:v libx264 -crf 23 -preset fast -c:a aac -b:a 192k {1}".format(
-            out_file, fname
+        cmdline = "{0} -f concat -safe 0 -i {1} -c:v libx264 -crf 23 -preset fast -c:a aac -b:a 192k {2}".format(
+            ffmpeg, out_file, fname
         )
     else:
-        cmdline = "ffmpeg -f concat -safe 0 -i {0} -c copy {1}".format(out_file, fname)
+        cmdline = "{0} -f concat -safe 0 -i {1}} -c copy {2}".format(ffmpeg, out_file, fname)
 
     print(cmdline)
     iret = os.system(cmdline)
