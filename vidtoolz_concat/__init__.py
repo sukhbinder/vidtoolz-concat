@@ -67,7 +67,7 @@ def make_video(files, fname, encoding=False):
     base_name = os.path.basename(fname)
     bname, ext = os.path.splitext(base_name)
     tempdir = tempfile.gettempdir()
-    
+
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
     out_file = os.path.join(tempdir, "{}_mylist.txt".format(bname))
     with open(out_file, "w") as fout:
@@ -79,7 +79,9 @@ def make_video(files, fname, encoding=False):
             ffmpeg, out_file, fname
         )
     else:
-        cmdline = "{0} -f concat -safe 0 -i {1} -c copy {2}".format(ffmpeg, out_file, fname)
+        cmdline = "{0} -f concat -safe 0 -i {1} -c copy {2}".format(
+            ffmpeg, out_file, fname
+        )
 
     print(cmdline)
     iret = os.system(cmdline)
