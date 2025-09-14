@@ -48,7 +48,7 @@ def create_concat_movie(inputfile, output, onlyaudio=False):
     return output_path
 
 
-def determine_output_path(input_file, output_file):
+def determine_output_path(input_file, output_file, tag="notag"):
     input_dir, input_filename = os.path.split(input_file)
     name, _ = os.path.splitext(input_filename)
 
@@ -58,7 +58,7 @@ def determine_output_path(input_file, output_file):
             return os.path.join(input_dir, output_filename)
         return output_file
     else:
-        return os.path.join(input_dir, f"{name}_concat.mp4")
+        return os.path.join(input_dir, f"{name}_{tag}_concat.mp4")
 
 
 def make_video(files, fname, encoding=False):
@@ -75,7 +75,7 @@ def make_video(files, fname, encoding=False):
             if os.path.exists(f):
                 fout.write("file '{}'\n".format(f))
     if encoding:
-        cmdline = "{0} -f concat -safe 0 -i {1} -c:v libx264 -crf 23 -preset fast -c:a aac -b:a 192k {2}".format(
+        cmdline = "{0} -f concat -safe 0 -i {1} -c:v libx264 -crf 23 -preset fast -c:a aac {2}".format(
             ffmpeg, out_file, fname
         )
     else:
@@ -203,6 +203,14 @@ def create_parser(subparser):
         help="if Provided, Use moviepy",
     )
 
+    parser.add_argument(
+        "-tag",
+        "--tag",
+        type=str,
+        default="notag",
+        help="if Provided, Add this tag in filename Default: notag",
+    )
+
     return parser
 
 
@@ -231,11 +239,11 @@ class ViztoolzPlugin:
 
         if args.inputfile is None:
             inputs = args.input
-            output = determine_output_path(inputs[0], args.output)
+            output = determine_output_path(inputs[0], args.output, args.tag)
             make_concatfile(inputs, output)
         else:
             inputs = args.inputfile
-            output = determine_output_path(args.inputfile, args.output)
+            output = determine_output_path(args.inputfile, args.output, args.tag)
 
         if args.use_moviepy:
             fname = create_concat_movie(inputs, output, onlyaudio=False)
