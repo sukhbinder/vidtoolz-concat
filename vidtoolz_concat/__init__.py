@@ -189,19 +189,19 @@ def create_parser(subparser):
         "--change-dir",
         type=str,
         default=None,
-        help="if Provided, go to this folder, before anything.",
+        help="if Provided, go to this folder, before anything. (default: %(default)s)",
     )
     parser.add_argument(
         "-e",
         "--encoding",
         action="store_true",
-        help="if Provided, Use re-encoding",
+        help="if Provided, Use re-encoding (default: %(default)s)",
     )
     parser.add_argument(
         "-um",
         "--use-moviepy",
         action="store_true",
-        help="if Provided, Use moviepy",
+        help="if Provided, Use moviepy (default: %(default)s)",
     )
 
     parser.add_argument(
@@ -209,7 +209,7 @@ def create_parser(subparser):
         "--tag",
         type=str,
         default="notag",
-        help="if Provided, Add this tag in filename Default: notag",
+        help="if Provided, Add this tag in filename (default: %(default)s)",
     )
 
     return parser

@@ -94,7 +94,6 @@ def test_concat(mock_getctime, mock_open_file, mock_exists, mock_system, tmpdir)
 def test_realcase(tmpdir):
     outfile = tmpdir / "test.mp4"
     mp4file = Path(__file__).parent / "Sukhbinder-Singh.mp4"
-    # shutil.copy2(str(mp4file), str(tmpdir))
     argv = [
         "-i",
         str(mp4file),
