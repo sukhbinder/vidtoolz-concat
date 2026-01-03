@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import patch, mock_open
 
 from argparse import ArgumentParser
+from pathlib import Path
 
 
 def test_create_parser():
@@ -47,7 +48,6 @@ def mock_filesystem(tmpdir):
 def test_make_video(mock_exists, mock_system, mock_filesystem):
     files = mock_filesystem
     fname = "output.mp4"
-
     # Call the function
     result = w.make_video(files, fname)
 
@@ -89,3 +89,22 @@ def test_concat(mock_getctime, mock_open_file, mock_exists, mock_system, tmpdir)
 
     # Assertions for section mode
     assert "output.mp4" in output  # Check the generated file name
+
+
+def test_realcase(tmpdir):
+    outfile = tmpdir / "test.mp4"
+    mp4file = Path(__file__).parent / "Sukhbinder-Singh.mp4"
+    # shutil.copy2(str(mp4file), str(tmpdir))
+    argv = [
+        "-i",
+        str(mp4file),
+        "-i",
+        str(mp4file),
+        "-o",
+        str(outfile),
+    ]
+    subparser = ArgumentParser().add_subparsers()
+    parser = w.create_parser(subparser)
+    args = parser.parse_args(argv)
+    w.concat_plugin.run(args)
+    assert outfile.exists()

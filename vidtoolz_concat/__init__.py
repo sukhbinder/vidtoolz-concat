@@ -21,12 +21,13 @@ def create_concat_movie(inputfile, output, onlyaudio=False):
 
     clip = mpy.concatenate_videoclips(clips)
 
-    # Write out only audio file also
+    # Write out only audio file also if there is an audio
     audio = clip.audio
-    aoutput_path = f"{output}-audio.mp3"
-    audio = audio.with_fps(44100)
-    audio.write_audiofile(aoutput_path)
-    print("{} mp3 created".format(aoutput_path))
+    if audio:
+        aoutput_path = f"{output}-audio.mp3"
+        audio = audio.with_fps(44100)
+        audio.write_audiofile(aoutput_path)
+        print("{} mp3 created".format(aoutput_path))
 
     # write out video
     if not onlyaudio:
@@ -114,7 +115,7 @@ def concat(
 ):
     if isinstance(inputfile, list):
         files = inputfile
-        folder = os.path.dirname(inputfile[0])
+        folder = os.path.dirname(os.path.abspath(inputfile[0]))
     else:
         inputfile = os.path.abspath(inputfile)
         folder = os.path.dirname(inputfile)
