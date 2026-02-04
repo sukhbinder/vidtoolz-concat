@@ -5,6 +5,12 @@ import tempfile
 import moviepy as mpy
 import imageio_ffmpeg
 
+import re
+
+def sanitize_string(text: str) -> str:
+    text = text.replace(" ", "_").strip()
+    return re.sub(r"[^A-Za-z0-9._-]", "", text)
+
 
 def create_concat_movie(inputfile, output, onlyaudio=False):
     if isinstance(inputfile, list):
@@ -238,13 +244,15 @@ class ViztoolzPlugin:
         if args.change_dir is not None:
             os.chdir(args.change_dir)
 
+        tag = sanitize_string(args.tag)
+
         if args.inputfile is None:
             inputs = args.input
-            output = determine_output_path(inputs[0], args.output, args.tag)
+            output = determine_output_path(inputs[0], args.output, tag)
             make_concatfile(inputs, output)
         else:
             inputs = args.inputfile
-            output = determine_output_path(args.inputfile, args.output, args.tag)
+            output = determine_output_path(args.inputfile, args.output, tag)
 
         if args.use_moviepy:
             fname = create_concat_movie(inputs, output, onlyaudio=False)
