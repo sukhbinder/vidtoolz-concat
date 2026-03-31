@@ -11,6 +11,7 @@ classifiers = [
 dependencies = [
     "vidtoolz",
     "numpy",
+    "vidtoolz-rnnn"
 ]
 
 [project.urls]
