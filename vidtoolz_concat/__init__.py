@@ -5,6 +5,12 @@ import tempfile
 import moviepy as mpy
 import imageio_ffmpeg
 
+import re
+
+def sanitize_string(text: str) -> str:
+    text = text.replace(" ", "_").strip()
+    return re.sub(r"[^A-Za-z0-9._-]", "", text)
+
 
 def create_concat_movie(inputfile, output, onlyaudio=False):
     if isinstance(inputfile, list):
@@ -21,12 +27,13 @@ def create_concat_movie(inputfile, output, onlyaudio=False):
 
     clip = mpy.concatenate_videoclips(clips)
 
-    # Write out only audio file also
+    # Write out only audio file also if there is an audio
     audio = clip.audio
-    aoutput_path = f"{output}-audio.mp3"
-    audio = audio.with_fps(44100)
-    audio.write_audiofile(aoutput_path)
-    print("{} mp3 created".format(aoutput_path))
+    if audio:
+        aoutput_path = f"{output}-audio.mp3"
+        audio = audio.with_fps(44100)
+        audio.write_audiofile(aoutput_path)
+        print("{} mp3 created".format(aoutput_path))
 
     # write out video
     if not onlyaudio:
@@ -114,7 +121,7 @@ def concat(
 ):
     if isinstance(inputfile, list):
         files = inputfile
-        folder = os.path.dirname(inputfile[0])
+        folder = os.path.dirname(os.path.abspath(inputfile[0]))
     else:
         inputfile = os.path.abspath(inputfile)
         folder = os.path.dirname(inputfile)
@@ -188,19 +195,19 @@ def create_parser(subparser):
         "--change-dir",
         type=str,
         default=None,
-        help="if Provided, go to this folder, before anything.",
+        help="if Provided, go to this folder, before anything. (default: %(default)s)",
     )
     parser.add_argument(
         "-e",
         "--encoding",
         action="store_true",
-        help="if Provided, Use re-encoding",
+        help="if Provided, Use re-encoding (default: %(default)s)",
     )
     parser.add_argument(
         "-um",
         "--use-moviepy",
         action="store_true",
-        help="if Provided, Use moviepy",
+        help="if Provided, Use moviepy (default: %(default)s)",
     )
 
     parser.add_argument(
@@ -208,7 +215,7 @@ def create_parser(subparser):
         "--tag",
         type=str,
         default="notag",
-        help="if Provided, Add this tag in filename Default: notag",
+        help="if Provided, Add this tag in filename (default: %(default)s)",
     )
 
     return parser
@@ -237,13 +244,15 @@ class ViztoolzPlugin:
         if args.change_dir is not None:
             os.chdir(args.change_dir)
 
+        tag = sanitize_string(args.tag)
+
         if args.inputfile is None:
             inputs = args.input
-            output = determine_output_path(inputs[0], args.output, args.tag)
+            output = determine_output_path(inputs[0], args.output, tag)
             make_concatfile(inputs, output)
         else:
             inputs = args.inputfile
-            output = determine_output_path(args.inputfile, args.output, args.tag)
+            output = determine_output_path(args.inputfile, args.output, tag)
 
         if args.use_moviepy:
             fname = create_concat_movie(inputs, output, onlyaudio=False)
