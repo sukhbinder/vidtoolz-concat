@@ -1,18 +1,20 @@
-import vidtoolz
 import os
-import numpy as np
-import tempfile
-import moviepy as mpy
-import imageio_ffmpeg
-
 import re
+import tempfile
+
+import imageio_ffmpeg
+import moviepy as mpy
+import numpy as np
+import vidtoolz
+from vidtoolz_rnnn import denoise_audio
+
 
 def sanitize_string(text: str) -> str:
     text = text.replace(" ", "_").strip()
     return re.sub(r"[^A-Za-z0-9._-]", "", text)
 
 
-def create_concat_movie(inputfile, output, onlyaudio=False):
+def create_concat_movie(inputfile, output, onlyaudio=False, denoise=False):
     if isinstance(inputfile, list):
         files = inputfile
         folder = os.path.dirname(inputfile[0])
@@ -29,11 +31,18 @@ def create_concat_movie(inputfile, output, onlyaudio=False):
 
     # Write out only audio file also if there is an audio
     audio = clip.audio
+    audioflag = True
     if audio:
         aoutput_path = f"{output}-audio.mp3"
         audio = audio.with_fps(44100)
         audio.write_audiofile(aoutput_path)
         print("{} mp3 created".format(aoutput_path))
+
+    if denoise and audio:
+        output_wav = f"{output}-audio.wav"
+        denoise_audio(aoutput_path, output_wav, "lq", 0.9)
+        print("{} wav created".format(aoutput_path))
+        audioflag = output_wav
 
     # write out video
     if not onlyaudio:
@@ -44,7 +53,7 @@ def create_concat_movie(inputfile, output, onlyaudio=False):
         clip.write_videofile(
             output_path,
             temp_audiofile="out.m4a",
-            audio=True,
+            audio=audioflag,
             audio_codec="aac",
             codec="libx264",
             fps=60,
@@ -209,6 +218,12 @@ def create_parser(subparser):
         action="store_true",
         help="if Provided, Use moviepy (default: %(default)s)",
     )
+    parser.add_argument(
+        "-nd",
+        "--no-denoise",
+        action="store_true",
+        help="if Provided, Do not denoise when using moviepy (default: %(default)s)",
+    )
 
     parser.add_argument(
         "-tag",
@@ -255,7 +270,9 @@ class ViztoolzPlugin:
             output = determine_output_path(args.inputfile, args.output, tag)
 
         if args.use_moviepy:
-            fname = create_concat_movie(inputs, output, onlyaudio=False)
+            fname = create_concat_movie(
+                inputs, output, onlyaudio=False, denoise=not args.no_denoise
+            )
         else:
             fname = concat(inputs, output, args.section, args.nsec, args.encoding)
         print("{} created".format(fname))
