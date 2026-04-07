@@ -1,18 +1,79 @@
-import vidtoolz
 import os
-import numpy as np
-import tempfile
-import moviepy as mpy
-import imageio_ffmpeg
-
 import re
+import tempfile
+
+import imageio_ffmpeg
+import moviepy as mpy
+import numpy as np
+import vidtoolz
+from vidtoolz_rnnn import denoise_audio
+import shutil
+import subprocess
+
+
+def add_audio_to_video(input_mp4, input_wav, output_mp4=None):
+    """
+    Merges a WAV audio file into an MP4 video using ffmpeg.
+
+    If output_mp4 is not provided, the input video will be replaced.
+
+    Args:
+        input_mp4 (str): Path to input MP4 file
+        input_wav (str): Path to input WAV file
+        output_mp4 (str, optional): Path to output MP4 file
+    """
+
+    if output_mp4 is None:
+        # Create a temporary output file
+        temp_dir = tempfile.gettempdir()
+        output_mp4 = os.path.join(temp_dir, "temp_output.mp4")
+        overwrite_input = True
+    else:
+        overwrite_input = False
+
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_mp4,
+        "-i",
+        input_wav,
+        "-map",
+        "0:v:0",
+        "-map",
+        "1:a:0",
+        "-c:v",
+        "copy",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "128k",
+        "-af",
+        "aresample=async=1",
+        "-shortest",
+        "-movflags",
+        "+faststart",
+        output_mp4,
+    ]
+
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"FFmpeg failed: {e}")
+
+    # If no output was specified, replace the original file
+    if overwrite_input:
+        shutil.move(output_mp4, input_mp4)
+
+    return output_mp4
+
 
 def sanitize_string(text: str) -> str:
     text = text.replace(" ", "_").strip()
     return re.sub(r"[^A-Za-z0-9._-]", "", text)
 
 
-def create_concat_movie(inputfile, output, onlyaudio=False):
+def create_concat_movie(inputfile, output, onlyaudio=False, denoise=False):
     if isinstance(inputfile, list):
         files = inputfile
         folder = os.path.dirname(inputfile[0])
@@ -35,6 +96,11 @@ def create_concat_movie(inputfile, output, onlyaudio=False):
         audio.write_audiofile(aoutput_path)
         print("{} mp3 created".format(aoutput_path))
 
+    if denoise and audio:
+        output_wav = f"{output}-audio.wav"
+        denoise_audio(aoutput_path, output_wav, "lq", 0.9)
+        print("{} wav created".format(aoutput_path))
+
     # write out video
     if not onlyaudio:
         output_path = output
@@ -44,12 +110,19 @@ def create_concat_movie(inputfile, output, onlyaudio=False):
         clip.write_videofile(
             output_path,
             temp_audiofile="out.m4a",
-            audio=True,
+            audio=audio,
             audio_codec="aac",
             codec="libx264",
             fps=60,
         )
+
+        if denoise:
+            output_path = add_audio_to_video(output_path, output_wav)
         print("{} mp4 created".format(output_path))
+
+    # Add the denoise wav to teh created video. using this
+    # ffmpeg -y -i file_3_test-um_concat.mp4 -i file_3_test-um_concat.mp4-audio.wav -c:v copy -c:a aac -b:a 128k -af aresample=async=1 -shortest -movflags +faststart final_output.mp4
+    #
 
     _ = [clip.close() for clip in clips]
     return output_path
@@ -69,6 +142,51 @@ def determine_output_path(input_file, output_file, tag="notag"):
 
 
 def make_video(files, fname, encoding=False):
+    if os.path.exists(fname):
+        os.remove(fname)
+
+    base_name = os.path.basename(fname)
+    bname, ext = os.path.splitext(base_name)
+    tempdir = tempfile.gettempdir()
+
+    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+    out_file = os.path.join(tempdir, f"{bname}_mylist.txt")
+
+    with open(out_file, "w") as fout:
+        for f in files:
+            if os.path.exists(f):
+                fout.write(f"file '{f}'\n")
+
+    if encoding:
+        cmdline = f"""
+{ffmpeg} -y -f concat -safe 0 -i {out_file} \
+-fflags +genpts \
+-vsync vfr \
+-c:v libx264 -preset fast -crf 23 \
+-pix_fmt yuv420p \
+-c:a aac -b:a 128k \
+-af aresample=async=1 \
+-movflags +faststart \
+-fflags +genpts \
+-avoid_negative_ts make_zero \
+-af aresample=async=1 \
+{fname}
+"""
+    else:
+        # SAFE "copy" mode (fixed timestamps)
+        cmdline = f"""
+{ffmpeg} -y -f concat -safe 0 -i {out_file} \
+-fflags +genpts \
+-avoid_negative_ts make_zero \
+-c copy \
+{fname}
+"""
+
+    print(cmdline)
+    return os.system(cmdline)
+
+
+def make_video_old(files, fname, encoding=False):
     if os.path.exists(fname):
         os.remove(fname)
     base_name = os.path.basename(fname)
@@ -209,6 +327,12 @@ def create_parser(subparser):
         action="store_true",
         help="if Provided, Use moviepy (default: %(default)s)",
     )
+    parser.add_argument(
+        "-nd",
+        "--no-denoise",
+        action="store_true",
+        help="if Provided, Do not denoise when using moviepy (default: %(default)s)",
+    )
 
     parser.add_argument(
         "-tag",
@@ -255,7 +379,9 @@ class ViztoolzPlugin:
             output = determine_output_path(args.inputfile, args.output, tag)
 
         if args.use_moviepy:
-            fname = create_concat_movie(inputs, output, onlyaudio=False)
+            fname = create_concat_movie(
+                inputs, output, onlyaudio=False, denoise=not args.no_denoise
+            )
         else:
             fname = concat(inputs, output, args.section, args.nsec, args.encoding)
         print("{} created".format(fname))
