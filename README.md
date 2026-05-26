@@ -46,6 +46,8 @@ optional arguments:
                         if Provided, go to this folder, before anything.
   -e, --encoding        if Provided, Use re-encoding
   -um, --use-moviepy    if Provided, Use moviepy
+  -sh, --skipheader     Skip header lines in the input file (default: 0)
+  -sf, --skipfooter     Skip footer lines in the input file (default: 0)
 
 ```
 
