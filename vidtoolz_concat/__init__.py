@@ -7,9 +7,28 @@ import imageio_ffmpeg
 
 import re
 
+
 def sanitize_string(text: str) -> str:
     text = text.replace(" ", "_").strip()
     return re.sub(r"[^A-Za-z0-9._-]", "", text)
+
+
+def read_orderfile(fname, skipheader=0, skipfooter=0):
+    fname = os.path.abspath(fname)
+    fdir = os.path.dirname(fname)
+    with open(fname, "r") as fin:
+        files = fin.readlines()
+
+    # Return the lines excluding the header and footer
+    if skipfooter == 0:
+        files = files[skipheader:]
+    else:
+        files = files[skipheader:-skipfooter]
+
+    mov = [
+        os.path.join(fdir, f.strip()) for f in files if not f.strip().startswith("#")
+    ]
+    return mov
 
 
 def create_concat_movie(inputfile, output, onlyaudio=False):
@@ -218,6 +237,20 @@ def create_parser(subparser):
         help="if Provided, Add this tag in filename (default: %(default)s)",
     )
 
+    parser.add_argument(
+        "-sh",
+        "--skipheader",
+        type=int,
+        help="Skip headers in filename (default: %(default)s)",
+        default=0,
+    )
+    parser.add_argument(
+        "-sf",
+        "--skipfooter",
+        type=int,
+        help="Skip footer in filename (default: %(default)s)",
+        default=0,
+    )
     return parser
 
 
@@ -251,8 +284,10 @@ class ViztoolzPlugin:
             output = determine_output_path(inputs[0], args.output, tag)
             make_concatfile(inputs, output)
         else:
-            inputs = args.inputfile
             output = determine_output_path(args.inputfile, args.output, tag)
+            inputs = read_orderfile(
+                args.inputfile, skipheader=args.skipheader, skipfooter=args.skipfooter
+            )
 
         if args.use_moviepy:
             fname = create_concat_movie(inputs, output, onlyaudio=False)
