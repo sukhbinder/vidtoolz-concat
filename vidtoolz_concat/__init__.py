@@ -19,15 +19,14 @@ def read_orderfile(fname, skipheader=0, skipfooter=0):
     with open(fname, "r") as fin:
         files = fin.readlines()
 
+    files = [f.strip() for f in files if not f.strip().startswith("#")]
     # Return the lines excluding the header and footer
     if skipfooter == 0:
         files = files[skipheader:]
     else:
         files = files[skipheader:-skipfooter]
 
-    mov = [
-        os.path.join(fdir, f.strip()) for f in files if not f.strip().startswith("#")
-    ]
+    mov = [os.path.join(fdir, f.strip()) for f in files]
     return mov
 
 
