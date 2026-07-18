@@ -13,20 +13,26 @@ def sanitize_string(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "", text)
 
 
-def read_orderfile(fname, skipheader=0, skipfooter=0):
+def read_orderfile(fname, skipheader=0, skipfooter=0, num=None):
     fname = os.path.abspath(fname)
     fdir = os.path.dirname(fname)
+
     with open(fname, "r") as fin:
         files = fin.readlines()
 
     files = [f.strip() for f in files if not f.strip().startswith("#")]
-    # Return the lines excluding the header and footer
+
+    # Remove header/footer
     if skipfooter == 0:
         files = files[skipheader:]
     else:
         files = files[skipheader:-skipfooter]
 
-    mov = [os.path.join(fdir, f.strip()) for f in files]
+    # Keep only the next `num` files
+    if num is not None:
+        files = files[:num]
+
+    mov = [os.path.join(fdir, f) for f in files]
     return mov
 
 
@@ -250,6 +256,13 @@ def create_parser(subparser):
         help="Skip footer in filename (default: %(default)s)",
         default=0,
     )
+    parser.add_argument(
+        "-num",
+        "--num",
+        type=int,
+        default=None,
+        help="Number of files to read after skipheader (default: %(default)s)",
+    )
     return parser
 
 
@@ -285,7 +298,7 @@ class ViztoolzPlugin:
         else:
             output = determine_output_path(args.inputfile, args.output, tag)
             inputs = read_orderfile(
-                args.inputfile, skipheader=args.skipheader, skipfooter=args.skipfooter
+                args.inputfile, skipheader=args.skipheader, skipfooter=args.skipfooter, num=args.num
             )
 
         if args.use_moviepy:
