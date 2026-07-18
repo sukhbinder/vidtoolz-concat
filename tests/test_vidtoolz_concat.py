@@ -19,10 +19,19 @@ def test_create_parser():
     assert result.section is None
     assert result.nsec is None
     assert result.use_moviepy is False
+    assert result.num is None
+    assert result.skipheader == 0
+    assert result.skipfooter == 0
 
     result = parser.parse_args(["-i", "1.mov", "-i", "2.mov"])
     assert result.inputfile is None
     assert result.input == ["1.mov", "2.mov"]
+
+    result = parser.parse_args(["-num", "5"])
+    assert result.num == 5
+
+    result = parser.parse_args(["--num", "10"])
+    assert result.num == 10
 
 
 def test_plugin(capsys):

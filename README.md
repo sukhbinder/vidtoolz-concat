@@ -48,6 +48,7 @@ optional arguments:
   -um, --use-moviepy    if Provided, Use moviepy
   -sh, --skipheader     Skip header lines in the input file (default: 0)
   -sf, --skipfooter     Skip footer lines in the input file (default: 0)
+  -num, --num NUM       Number of files to read from the input file (default: None, reads all)
 
 ```
 

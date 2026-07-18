@@ -239,3 +239,134 @@ video3.mp4
         assert result == [os.path.join(tempdir, "video2.mp4")]
     finally:
         os.unlink(fname)
+
+
+def test_read_orderfile_with_num():
+    """Test reading order file with num parameter."""
+    content = """video1.mp4
+video2.mp4
+video3.mp4
+video4.mp4
+video5.mp4
+"""
+    fd, fname = tempfile.mkstemp(suffix=".txt")
+    with os.fdopen(fd, "w") as f:
+        f.write(content)
+    try:
+        result = w.read_orderfile(fname, skipheader=0, skipfooter=0, num=2)
+        assert len(result) == 2
+        tempdir = os.path.dirname(fname)
+        assert result == [
+            os.path.join(tempdir, "video1.mp4"),
+            os.path.join(tempdir, "video2.mp4"),
+        ]
+    finally:
+        os.unlink(fname)
+
+
+def test_read_orderfile_with_num_and_skip():
+    """Test reading order file with num parameter and skip parameters."""
+    content = """# Header comment
+video1.mp4
+video2.mp4
+video3.mp4
+video4.mp4
+# Footer comment
+"""
+    fd, fname = tempfile.mkstemp(suffix=".txt")
+    with os.fdopen(fd, "w") as f:
+        f.write(content)
+    try:
+        # Skip header, limit to 2 files
+        result = w.read_orderfile(fname, skipheader=1, skipfooter=0, num=2)
+        assert len(result) == 2
+        tempdir = os.path.dirname(fname)
+        assert result == [
+            os.path.join(tempdir, "video2.mp4"),
+            os.path.join(tempdir, "video3.mp4"),
+        ]
+    finally:
+        os.unlink(fname)
+
+
+def test_read_orderfile_with_num_and_footer():
+    """Test reading order file with num parameter and footer skip."""
+    content = """video1.mp4
+video2.mp4
+video3.mp4
+video4.mp4
+# Footer comment
+"""
+    fd, fname = tempfile.mkstemp(suffix=".txt")
+    with os.fdopen(fd, "w") as f:
+        f.write(content)
+    try:
+        # Skip footer, limit to 2 files
+        result = w.read_orderfile(fname, skipheader=0, skipfooter=1, num=2)
+        assert len(result) == 2
+        tempdir = os.path.dirname(fname)
+        assert result == [
+            os.path.join(tempdir, "video1.mp4"),
+            os.path.join(tempdir, "video2.mp4"),
+        ]
+    finally:
+        os.unlink(fname)
+
+
+def test_read_orderfile_num_less_than_skip():
+    """Test num is smaller than remaining files after skip."""
+    content = """# Header
+video1.mp4
+video2.mp4
+video3.mp4
+video4.mp4
+video5.mp4
+"""
+    fd, fname = tempfile.mkstemp(suffix=".txt")
+    with os.fdopen(fd, "w") as f:
+        f.write(content)
+    try:
+        # Skip header, limit to 2 files (only 4 remain after skip)
+        result = w.read_orderfile(fname, skipheader=1, skipfooter=0, num=2)
+        assert len(result) == 2
+        tempdir = os.path.dirname(fname)
+        assert result == [
+            os.path.join(tempdir, "video2.mp4"),
+            os.path.join(tempdir, "video3.mp4"),
+        ]
+    finally:
+        os.unlink(fname)
+
+
+def test_read_orderfile_num_zero():
+    """Test num=0 returns empty list."""
+    content = """video1.mp4
+video2.mp4
+video3.mp4
+"""
+    fd, fname = tempfile.mkstemp(suffix=".txt")
+    with os.fdopen(fd, "w") as f:
+        f.write(content)
+    try:
+        result = w.read_orderfile(fname, skipheader=0, skipfooter=0, num=0)
+        assert len(result) == 0
+    finally:
+        os.unlink(fname)
+
+
+def test_read_orderfile_num_none_same_as_without_num():
+    """Test that num=None behaves same as not providing num."""
+    content = """video1.mp4
+video2.mp4
+video3.mp4
+"""
+    fd, fname = tempfile.mkstemp(suffix=".txt")
+    with os.fdopen(fd, "w") as f:
+        f.write(content)
+    try:
+        result = w.read_orderfile(fname, skipheader=0, skipfooter=0, num=None)
+        result2 = w.read_orderfile(fname, skipheader=0, skipfooter=0)
+        assert len(result) == len(result2)
+        assert result == result2
+    finally:
+        os.unlink(fname)
