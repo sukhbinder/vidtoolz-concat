@@ -116,3 +116,35 @@ def test_realcase(tmpdir):
     args = parser.parse_args(argv)
     w.concat_plugin.run(args)
     assert outfile.exists()
+
+
+
+
+def test_realcase_with_textfile(tmpdir):
+    # 1. Define the output path
+    outfile = tmpdir / "concat_result.mp4"
+    
+    # 2. Define the input text file containing video paths
+    # We create a temporary text file with the paths of the source video
+    textfile = tmpdir / "input_list.txt"
+    mp4file = Path(__file__).parent / "Sukhbinder-Singh.mp4"
+    textfile.write_text(str(mp4file) + "\n", encoding='utf-8')  # Writes the single video path to the file
+    
+    # 3. Prepare arguments
+    argv = [
+        str(textfile),  # Pass the text file path, not the video file path directly
+        "-o",
+        str(outfile),
+    ]
+
+    # 4. Parse arguments
+    subparser = ArgumentParser().add_subparsers()
+    parser = w.create_parser(subparser)
+    args = parser.parse_args(argv)
+    
+    # 5. Run the plugin
+    w.concat_plugin.run(args)
+    
+    # 6. Assert the output exists
+    assert outfile.exists()
+
