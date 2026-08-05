@@ -7,6 +7,7 @@
 
 Concat videos using ffmpeg 
 
+
 ## Installation
 
 First install [vidtoolz](https://github.com/sukhbinder/vidtoolz).
@@ -20,6 +21,14 @@ Then install this plugin in the same environment as your vidtoolz application.
 ```bash
 vidtoolz install vidtoolz-concat
 ```
+## Platform Compatibility
+
+This tool is fully tested and compatible with:
+- **macOS**
+- **Windows** (tested on Windows 10/11 with Python 3.8+)
+
+> **Note:** On Windows, ensure `ffmpeg` and `moviepy` are installed via the respective package managers (e.g., `pip install moviepy` and download `ffmpeg.exe` from the official releases if not bundled by vidtoolz).
+
 ## Usage
 
 type ``vidtoolz-concat --help`` to get help
@@ -56,11 +65,21 @@ optional arguments:
 ## Development
 
 To set up this plugin locally, first checkout the code. Then create a new virtual environment:
+
 ```bash
 cd vidtoolz-concat
 python -m venv venv
 source venv/bin/activate
 ```
+To set up this plugin locally , in windows, checkout the code.
+
+```bash
+cd vidtoolz-concat
+python -m venv venv
+venv\Scripts\activate
+pip install -e '.[test]'
+```
+  
 Now install the dependencies and test dependencies:
 ```bash
 pip install -e '.[test]'
