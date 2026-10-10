@@ -52,6 +52,41 @@ optional arguments:
 
 ```
 
+### Add text to selected clips
+
+An order file can mix plain video paths with CSV rows that add text to a
+specific clip before concatenation. Plain rows are concatenated unchanged. A
+text row has six fields:
+
+```text
+videofile,text,"the actual text to add",starttime,duration,position
+```
+
+For example, this adds “Hello” to `video.mp4` starting at 3 seconds, for 5
+seconds, near the upper right corner:
+
+```text
+video.mp4,text,"Hello",3,5,top-right
+```
+
+`starttime` and `duration` are measured within that clip. Times can be given in
+seconds or `MM:SS` / `HH:MM:SS` form. If the requested text interval runs past
+the end of the clip, concat warns and shortens the text duration to fit. If the
+start time is at or past the clip end, it warns and leaves that clip unchanged.
+
+Supported positions:
+
+- `top-left`: near the upper left corner
+- `top-right`: near the upper right corner
+- `bottom-left`: near the lower left corner
+- `bottom-right`: near the lower right corner
+- `center`: centered in the frame
+- `bottom`: centered along the lower edge
+
+FFmpeg renders text by default. Pass `--use-moviepy` to use MoviePy for both
+text rendering and the final concatenation. The sample `tests/orderfilewithtext.txt`
+demonstrates mixing plain video rows with text rows.
+
 
 ## Development
 
