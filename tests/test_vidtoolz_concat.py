@@ -1,11 +1,14 @@
 import pytest
+import csv
 import vidtoolz_concat as w
 import pytest
 from unittest.mock import patch, mock_open
 
 from argparse import ArgumentParser
 from pathlib import Path
+import os
 
+IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 def test_create_parser():
     subparser = ArgumentParser().add_subparsers()
@@ -116,3 +119,77 @@ def test_realcase(tmpdir):
     args = parser.parse_args(argv)
     w.concat_plugin.run(args)
     assert outfile.exists()
+
+
+@pytest.mark.parametrize("use_moviepy", [False, True], ids=["ffmpeg", "moviepy"])
+def test_concat_orderfile(tmpdir, use_moviepy):
+    """Concatenate the videos listed in the checked-in orderfile."""
+    orderfile = Path(__file__).parent / "orderfile.txt"
+    outfile = Path(tmpdir) / f"concat-{'moviepy' if use_moviepy else 'ffmpeg'}.mp4"
+    argv = [str(orderfile), "-o", str(outfile)]
+    if use_moviepy:
+        argv.append("--use-moviepy")
+
+    subparser = ArgumentParser().add_subparsers()
+    parser = w.create_parser(subparser)
+    args = parser.parse_args(argv)
+    w.concat_plugin.run(args)
+
+    assert outfile.exists()
+    assert outfile.stat().st_size > 0
+
+
+def test_read_orderfile_entries_with_text():
+    orderfile = Path(__file__).parent / "orderfilewithtext.txt"
+
+    entries = w.read_orderfile_entries(str(orderfile))
+
+    assert len(entries) == 5
+    assert entries[0] == {
+        "file": str(orderfile.parent / "Sukhbinder-Singh.mp4"),
+        "text": None,
+    }
+    assert entries[1] == {
+        "file": str(orderfile.parent / "Vidtoolz-is-useful.mp4"),
+        "text": "Cool Man",
+        "starttime": "0",
+        "duration": "2",
+        "position": "top-right",
+    }
+    assert entries[3]["text"] == "Do you like it"
+
+@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test doesn't work in Github Actions.")
+@pytest.mark.parametrize("use_moviepy", [False, True], ids=["ffmpeg", "moviepy"])
+def test_concat_orderfile_with_text(tmpdir, use_moviepy):
+    """Render the text rows in the sample order file and concatenate all clips."""
+    orderfile = Path(__file__).parent / "orderfilewithtext.txt"
+    outfile = Path(tmpdir) / f"concat-with-text-{'moviepy' if use_moviepy else 'ffmpeg'}.mp4"
+    argv = [str(orderfile), "-o", str(outfile)]
+    if use_moviepy:
+        argv.append("--use-moviepy")
+
+    subparser = ArgumentParser().add_subparsers()
+    parser = w.create_parser(subparser)
+    args = parser.parse_args(argv)
+    w.concat_plugin.run(args)
+
+    assert outfile.exists()
+    assert outfile.stat().st_size > 0
+
+
+def test_text_duration_is_clamped_to_clip(tmpdir):
+    source = Path(__file__).parent / "Sukhbinder-Singh.mp4"
+    orderfile = Path(tmpdir) / "long-text-orderfile.txt"
+    outfile = Path(tmpdir) / "clamped-text.mp4"
+    with orderfile.open("w", newline="") as fin:
+        csv.writer(fin).writerow([source, "text", "Long text", 0, 999, "center"])
+
+    subparser = ArgumentParser().add_subparsers()
+    parser = w.create_parser(subparser)
+    args = parser.parse_args([str(orderfile), "-o", str(outfile)])
+
+    with pytest.warns(UserWarning, match="shortened"):
+        w.concat_plugin.run(args)
+
+    assert outfile.exists()
+    assert outfile.stat().st_size > 0

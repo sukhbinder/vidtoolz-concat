@@ -10,6 +10,7 @@ classifiers = [
 ]
 dependencies = [
     "vidtoolz",
+    "vidtoolz-add-text",
     "numpy",
 ]
 
