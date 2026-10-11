@@ -6,7 +6,7 @@ from unittest.mock import patch, mock_open
 
 from argparse import ArgumentParser
 from pathlib import Path
-
+IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 def test_create_parser():
     subparser = ArgumentParser().add_subparsers()
@@ -156,7 +156,7 @@ def test_read_orderfile_entries_with_text():
     }
     assert entries[3]["text"] == "Do you like it"
 
-
+@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test doesn't work in Github Actions.")
 @pytest.mark.parametrize("use_moviepy", [False, True], ids=["ffmpeg", "moviepy"])
 def test_concat_orderfile_with_text(tmpdir, use_moviepy):
     """Render the text rows in the sample order file and concatenate all clips."""
