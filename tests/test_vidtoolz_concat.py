@@ -6,6 +6,8 @@ from unittest.mock import patch, mock_open
 
 from argparse import ArgumentParser
 from pathlib import Path
+import os
+
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 def test_create_parser():
